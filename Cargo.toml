@@ -19,6 +19,3 @@ genai = "0.2.4"
 async-trait = "0.1.88"
 atrium-api = { version = "0.25.3", features = ["tokio"] }
 dotenvy = "0.15.7"
-
-[patch]
-reqwest = { version = "0.12", features = ["rustls-tls"] }
