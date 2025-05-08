@@ -1,0 +1,24 @@
+[package]
+name = "gorkit"
+version = "0.1.0"
+edition = "2024"
+
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+bsky-sdk = "0.1"
+rocketman = "0.1"
+metrics = "0.24.2"
+metrics-exporter-prometheus = "0.17.0"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+anyhow = "1.0"
+genai = "0.2.4"
+async-trait = "0.1.88"
+atrium-api = { version = "0.25.3", features = ["tokio"] }
+dotenvy = "0.15.7"
+
+[patch]
+reqwest = { version = "0.12", features = ["rustls-tls"] }
