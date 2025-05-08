@@ -24,7 +24,7 @@ RUN cargo build --release --locked
 
 # Stage 2: Create the final, minimal image
 # We use a slim Debian image as a base for a smaller footprint.
-FROM debian:bullseye-slim AS final
+FROM debian:bookworm-slim AS final
 
 # install libc
 RUN apt-get update && apt-get install libc6-dev libssl-dev -y
