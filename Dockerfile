@@ -27,7 +27,7 @@ RUN cargo build --release --locked
 FROM debian:bullseye-slim AS final
 
 # install libc
-RUN apt-get update && apt-get install libc6-dev libssl-dev
+RUN apt-get update && apt-get install libc6-dev libssl-dev -y
 
 # Create a non-root user and group for security
 RUN groupadd --system appgroup && \
