@@ -26,6 +26,9 @@ RUN cargo build --release --locked
 # We use a slim Debian image as a base for a smaller footprint.
 FROM debian:bullseye-slim AS final
 
+# install libc
+RUN sudo apt-get update && sudo apt-get install libc6-dev libssl-dev
+
 # Create a non-root user and group for security
 RUN groupadd --system appgroup && \
     useradd --system --no-create-home -g appgroup appuser
