@@ -1,0 +1,5 @@
+services:
+  gork:
+    image: ghcr.io/espeon/gork@sha256:13c3f467825295c235361dc6c0ffa792cf739ebb478b1d0c7d>
+    env_file: .env
+    restart: always

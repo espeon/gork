@@ -153,7 +153,7 @@ impl LexiconIngestor for MyCoolIngestor {
                 serde_json::from_value::<atrium_api::app::bsky::feed::post::RecordData>(record)?;
 
             // if we good
-            if !riposte.text.starts_with("@gork is this ") {
+            if riposte.text != "@gork is this true" {
                 return Ok(());
             };
             // set the proper reply stuff to reply to mentioned post
