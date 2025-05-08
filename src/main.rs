@@ -45,7 +45,7 @@ fn setup_metrics() {
 }
 
 async fn setup_bsky_sess() -> anyhow::Result<BskyAgent> {
-    let agent = BskyAgent::builder().client(client).build().await?;
+    let agent = BskyAgent::builder().build().await?;
     let res = agent
         .login(std::env::var("ATP_USER")?, std::env::var("ATP_PASSWORD")?)
         .await?;
