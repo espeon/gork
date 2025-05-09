@@ -32,7 +32,7 @@ jobs:
 
           # If the event is a release, also tag and push with the release version
           if [ "${{ github.event_name }}" == "release" ]; then
-            docker buildx build --platform linux/amd64 -t ghcr.io/${{ github.repository }}:latest -t ghcr.io/${{ github.repository }}:${{ github.event.release.tag_name }}  --push .
+            docker buildx build --platform linux/amd64,linux/arm64 -t ghcr.io/${{ github.repository }}:latest -t ghcr.io/${{ github.repository }}:${{ github.event.release.tag_name }}  --push .
           else
-            docker buildx build --platform linux/amd64 -t ghcr.io/${{ github.repository }}:latest --push .
+            docker buildx build --platform linux/amd64,linux/arm64 -t ghcr.io/${{ github.repository }}:latest --push .
           fi
