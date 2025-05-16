@@ -7,7 +7,7 @@ use std::{
 use atrium_api::{
     app::bsky::feed::post::ReplyRefData,
     com::atproto::repo::strong_ref::MainData,
-    types::string::{Cid, Datetime},
+    types::string::{Cid, Datetime, Did},
 };
 use bsky_sdk::BskyAgent;
 use cursor::load_cursor;
@@ -44,7 +44,7 @@ fn setup_metrics() {
     }
 }
 
-async fn setup_bsky_sess() -> anyhow::Result<BskyAgent> {
+async fn setup_bsky_sess() -> anyhow::Result<(BskyAgent, Did)> {
     let agent = BskyAgent::builder().build().await?;
     let res = agent
         .login(std::env::var("ATP_USER")?, std::env::var("ATP_PASSWORD")?)
@@ -52,7 +52,7 @@ async fn setup_bsky_sess() -> anyhow::Result<BskyAgent> {
 
     info!("logged in as {}", res.handle.to_string());
 
-    Ok(agent)
+    Ok((agent, res.did.to_owned()))
 }
 
 #[tokio::main]
@@ -62,7 +62,7 @@ async fn main() {
     setup_metrics();
     info!("gorkin it...");
 
-    let agent = match setup_bsky_sess().await {
+    let (agent, did) = match setup_bsky_sess().await {
         Ok(r) => r,
         Err(e) => panic!("{}", e.to_string()),
     };
@@ -79,7 +79,7 @@ async fn main() {
     ingestors.insert(
         // your EXACT nsid
         "app.bsky.feed.post".to_string(),
-        Box::new(MyCoolIngestor::new(agent.clone())),
+        Box::new(MyCoolIngestor::new(agent.clone(), did)),
     );
 
     // tracks the last message we've processed
@@ -129,11 +129,12 @@ async fn main() {
 
 pub struct MyCoolIngestor {
     agent: BskyAgent,
+    did: Did,
 }
 
 impl MyCoolIngestor {
-    pub fn new(agent: BskyAgent) -> Self {
-        Self { agent }
+    pub fn new(agent: BskyAgent, did: Did) -> Self {
+        Self { agent, did }
     }
 }
 
@@ -152,8 +153,9 @@ impl LexiconIngestor for MyCoolIngestor {
             let riposte =
                 serde_json::from_value::<atrium_api::app::bsky::feed::post::RecordData>(record)?;
 
-            // if we good
-            if riposte.text != "@gork is this true" {
+            if !(riposte.text.starts_with("@gork")
+                && (riposte.text.contains("is this") || riposte.text.contains("am i")))
+            {
                 return Ok(());
             };
             // set the proper reply stuff to reply to mentioned post
