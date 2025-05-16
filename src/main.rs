@@ -154,7 +154,9 @@ impl LexiconIngestor for MyCoolIngestor {
                 serde_json::from_value::<atrium_api::app::bsky::feed::post::RecordData>(record)?;
 
             if !(riposte.text.starts_with("@gork")
-                && (riposte.text.contains("is this") || riposte.text.contains("am i")))
+                && (riposte.text.contains("is this")
+                    || riposte.text.contains("am i")
+                    || riposte.text.contains("do you")))
             {
                 return Ok(());
             };
