@@ -7,7 +7,7 @@ use std::{
 use atrium_api::{
     app::bsky::feed::post::ReplyRefData,
     com::atproto::repo::strong_ref::MainData,
-    types::string::{Cid, Datetime, Did},
+    types::string::{Cid, Datetime},
 };
 use bsky_sdk::BskyAgent;
 use cursor::load_cursor;
@@ -44,7 +44,7 @@ fn setup_metrics() {
     }
 }
 
-async fn setup_bsky_sess() -> anyhow::Result<(BskyAgent, Did)> {
+async fn setup_bsky_sess() -> anyhow::Result<BskyAgent> {
     let agent = BskyAgent::builder().build().await?;
     let res = agent
         .login(std::env::var("ATP_USER")?, std::env::var("ATP_PASSWORD")?)
@@ -52,7 +52,7 @@ async fn setup_bsky_sess() -> anyhow::Result<(BskyAgent, Did)> {
 
     info!("logged in as {}", res.handle.to_string());
 
-    Ok((agent, res.did.to_owned()))
+    Ok(agent)
 }
 
 #[tokio::main]
@@ -62,7 +62,7 @@ async fn main() {
     setup_metrics();
     info!("gorkin it...");
 
-    let (agent, did) = match setup_bsky_sess().await {
+    let agent = match setup_bsky_sess().await {
         Ok(r) => r,
         Err(e) => panic!("{}", e.to_string()),
     };
@@ -79,7 +79,7 @@ async fn main() {
     ingestors.insert(
         // your EXACT nsid
         "app.bsky.feed.post".to_string(),
-        Box::new(MyCoolIngestor::new(agent.clone(), did)),
+        Box::new(MyCoolIngestor::new(agent.clone())),
     );
 
     // tracks the last message we've processed
@@ -129,12 +129,11 @@ async fn main() {
 
 pub struct MyCoolIngestor {
     agent: BskyAgent,
-    did: Did,
 }
 
 impl MyCoolIngestor {
-    pub fn new(agent: BskyAgent, did: Did) -> Self {
-        Self { agent, did }
+    pub fn new(agent: BskyAgent) -> Self {
+        Self { agent }
     }
 }
 

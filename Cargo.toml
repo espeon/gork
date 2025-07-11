@@ -7,7 +7,7 @@ edition = "2024"
 [dependencies]
 tokio = { version = "1", features = ["full"] }
 bsky-sdk = "0.1"
-rocketman = "0.1"
+rocketman = "0.2.3"
 metrics = "0.24.2"
 metrics-exporter-prometheus = "0.17.0"
 tracing = "0.1"
