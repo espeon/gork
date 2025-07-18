@@ -152,7 +152,7 @@ impl LexiconIngestor for MyCoolIngestor {
             let riposte =
                 serde_json::from_value::<atrium_api::app::bsky::feed::post::RecordData>(record)?;
 
-            if !(riposte.text.starts_with("@gork")
+            if !(riposte.text.starts_with("@gork.bluesky.bot")
                 && (riposte.text.contains("is this")
                     || riposte.text.contains("am i")
                     || riposte.text.contains("do you")))
