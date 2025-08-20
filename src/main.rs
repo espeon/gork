@@ -81,6 +81,7 @@ async fn main() {
         "app.bsky.feed.post".to_string(),
         Box::new(MyCoolIngestor::new(agent.clone())),
     );
+    let ingestors = Arc::new(ingestors);
 
     // tracks the last message we've processed
     let cursor: Arc<Mutex<Option<u64>>> = Arc::new(Mutex::new(load_cursor().await));
@@ -89,19 +90,29 @@ async fn main() {
     let msg_rx = jetstream.get_msg_rx();
     let reconnect_tx = jetstream.get_reconnect_tx();
 
-    // spawn a task to process messages from the queue.
-    // this is a simple implementation, you can use a more complex one based on needs.
-    let c_cursor = cursor.clone();
-    tokio::spawn(async move {
-        while let Ok(message) = msg_rx.recv_async().await {
-            if let Err(e) =
-                handler::handle_message(message, &ingestors, reconnect_tx.clone(), c_cursor.clone())
-                    .await
-            {
-                eprintln!("Error processing message: {}", e);
-            };
-        }
-    });
+    // spawn 10 tasks to process messages from the queue concurrently
+    for i in 0..10 {
+        let msg_rx_clone = msg_rx.clone();
+        let ingestors_clone = Arc::clone(&ingestors);
+        let reconnect_tx_clone = reconnect_tx.clone();
+        let c_cursor = cursor.clone();
+
+        tokio::spawn(async move {
+            info!("Starting worker thread {}", i);
+            while let Ok(message) = msg_rx_clone.recv_async().await {
+                if let Err(e) = handler::handle_message(
+                    message,
+                    &ingestors_clone,
+                    reconnect_tx_clone.clone(),
+                    c_cursor.clone(),
+                )
+                .await
+                {
+                    eprintln!("Error processing message in worker {}: {}", i, e);
+                };
+            }
+        });
+    }
 
     let c_cursor = cursor.clone();
     tokio::spawn(async move {
