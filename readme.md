@@ -1,44 +1,46 @@
-# Gorkit Bot
+## Gorkit Bot
 
-Gorkit is a Bluesky (AT Protocol) bot written in Rust. It monitors the network for specific mentions and automatically replies to them.
+Gorkit is a Bluesky (AT Protocol) bot written in Rust. Monitors specific posts and replies automatically.
 
-## Features
+### Features
 
-*   Listens to the AT Protocol's event stream (Jetstream) for new posts.
-*   Specifically filters for posts on the `app.bsky.feed.post` collection.
-*   Identifies posts that contain the exact text "@gork is this true".
-*   Replies to these mentions with the text "yeh".
-*   Persists its progress (cursor) to avoid reprocessing old messages on restart.
-*   Includes basic setup for tracing (logging) and Prometheus metrics.
+* Subscribes to the AT Protocol event stream (Jetstream).
+* Filters for posts in `app.bsky.feed.post`.
+* Detects exact match: `@gork.bluesky.bot is this true`.
+* Replies with `yeh`.
+* Saves cursor to avoid duplicate processing on restart.
+* Includes basic setup for tracing and Prometheus metrics.
 
-## Prerequisites
+### Requirements
 
-*   Rust toolchain installed.
-*   A Bluesky account.
+* Rust toolchain installed.
+* Bluesky account.
 
-## Setup
+### Setup
 
-1.  **Clone the repository (if applicable)**
-    ```bash
-    # git clone <your-repo-url>
-    # cd gorkit
-    ```
+1. **Clone the repository (if needed)**
 
-2.  **Set Environment Variables**:
-    The bot requires your Bluesky credentials to log in and post replies. Create a `.env` file in the root of the project directory with the following content:
+   ```bash
+   git clone <your-repo-url>
+   cd gorkit
+   ```
 
-    ```env
-    ATP_USER="your-bluesky-username"
-    ATP_PASSWORD="your-bluesky-app-password"
-    ```
-    Replace `your-bluesky-username` with your Bluesky handle (e.g., `example.bsky.social`) and `your-bluesky-app-password` with an app password you generate from your Bluesky account settings. **Do not use your main account password.**
+2. **Set environment variables**
 
-## Running the Bot
+   Create a `.env` file in the project root:
 
-Once the environment variables are set up, you can run the bot using Cargo:
+   ```env
+   ATP_USER="your-bluesky-username"
+   ATP_PASSWORD="your-bluesky-app-password"
+   ```
+
+   Replace values accordingly.
+   Use an app password, not your main account password.
+
+### Run
 
 ```bash
 cargo run
 ```
 
-The bot will start, log in to Bluesky, and begin listening for mentions.
+Starts the bot, logs in, and listens for mentions.

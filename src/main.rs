@@ -70,6 +70,7 @@ async fn main() {
     let opts = JetstreamOptions::builder()
         // your EXACT nsids
         .wanted_collections(vec!["app.bsky.feed.post".to_string()])
+        .bound(8 * 8 * 8 * 8 * 8 * 8) // 262144
         .build();
     // create the jetstream connector
     let jetstream = JetstreamConnection::new(opts);
