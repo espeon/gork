@@ -46,8 +46,9 @@ impl LexiconIngestor for AppBskyFeedPostIngestor {
             if !is_gork_mention(&poast.text) {
                 return Ok(());
             };
-            // get the strongref to da post
-            let rcid = StrongRef::new()
+
+            // get cid of post and call it the parent
+            let parent_cid = StrongRef::new()
                 .cid(cid)
                 .uri(AtUri::from_str(&format!(
                     "at://{}/{}/{}",
@@ -55,10 +56,12 @@ impl LexiconIngestor for AppBskyFeedPostIngestor {
                 ))?)
                 .build();
 
-            // get parent CID of above post, else get above post's CID
-            let parent_cid = match poast.reply {
-                Some(reply) => reply.parent,
-                None => rcid.clone(),
+            // get root cid
+            // if we have a post.reply.root, use that, else use the post cid
+            // if it has a reply, it has a root
+            let rcid = match &poast.reply {
+                Some(reply) => reply.root.clone(),
+                None => parent_cid.clone(),
             };
 
             let post = Post::new()
