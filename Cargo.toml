@@ -6,8 +6,7 @@ edition = "2024"
 
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-bsky-sdk = "0.1"
-rocketman = "0.2.5"
+rocketman = "0.3.0"
 metrics = "0.24.2"
 metrics-exporter-prometheus = "0.17.0"
 tracing = "0.1"
@@ -17,5 +16,5 @@ serde_json = "1.0"
 anyhow = "1.0"
 genai = "0.2.4"
 async-trait = "0.1.88"
-atrium-api = { version = "0.25.3", features = ["tokio"] }
 dotenvy = "0.15.7"
+jacquard = { git = "https://tangled.org/nonbinary.computer/jacquard"}

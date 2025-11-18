@@ -1,29 +1,17 @@
-use std::{
-    collections::HashMap,
-    str::FromStr,
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 
-use atrium_api::{
-    app::bsky::feed::post::ReplyRefData,
-    com::atproto::repo::strong_ref::MainData,
-    types::string::{Cid, Datetime},
-};
-use bsky_sdk::BskyAgent;
 use cursor::load_cursor;
+use jacquard::client::{Agent, MemoryCredentialSession};
 use metrics_exporter_prometheus::PrometheusBuilder;
-use serde_json::Value;
 use tracing::{error, info};
 
 use rocketman::{
     connection::JetstreamConnection,
-    handler,
-    ingestion::LexiconIngestor,
+    handler::{self, Ingestors},
     options::JetstreamOptions,
-    types::event::{Commit, Event},
 };
 
-use async_trait::async_trait;
+use crate::ingestors::app_bsky_feed_post::AppBskyFeedPostIngestor;
 
 mod cursor;
 mod ingestors;
@@ -44,13 +32,16 @@ fn setup_metrics() {
     }
 }
 
-async fn setup_bsky_sess() -> anyhow::Result<BskyAgent> {
-    let agent = BskyAgent::builder().build().await?;
-    let res = agent
-        .login(std::env::var("ATP_USER")?, std::env::var("ATP_PASSWORD")?)
-        .await?;
-
-    info!("logged in as {}", res.handle.to_string());
+async fn setup_bsky_sess() -> anyhow::Result<Agent<MemoryCredentialSession>> {
+    let (session, auth) = MemoryCredentialSession::authenticated(
+        std::env::var("ATP_USER")?.into(),
+        std::env::var("ATP_PASSWORD")?.into(),
+        None,
+        None,
+    )
+    .await?;
+    let agent: Agent<_> = Agent::from(session);
+    info!("logged in as {}", auth.handle);
 
     Ok(agent)
 }
@@ -62,32 +53,42 @@ async fn main() {
     setup_metrics();
     info!("gorkin it...");
 
-    let agent = match setup_bsky_sess().await {
+    let agent = Arc::new(match setup_bsky_sess().await {
         Ok(r) => r,
         Err(e) => panic!("{}", e.to_string()),
-    };
+    });
     // init the builder
     let opts = JetstreamOptions::builder()
         // your EXACT nsids
-        .wanted_collections(vec!["app.bsky.feed.post".to_string()])
+        .wanted_collections(vec![
+            "app.bsky.feed.post".to_string(),
+            "place.stream.chat.message".to_string(),
+        ])
         .bound(8 * 8 * 8 * 8 * 8 * 8) // 262144
         .build();
     // create the jetstream connector
     let jetstream = JetstreamConnection::new(opts);
 
     // create your ingestors
-    let mut ingestors: HashMap<String, Box<dyn LexiconIngestor + Send + Sync>> = HashMap::new();
-    ingestors.insert(
+    let mut ingestors = Ingestors::new();
+
+    ingestors.commits.insert(
         // your EXACT nsid
         "app.bsky.feed.post".to_string(),
-        Box::new(MyCoolIngestor::new(agent.clone())),
+        Box::new(AppBskyFeedPostIngestor::new(agent.clone())),
     );
+
+    ingestors.commits.insert(
+        // your EXACT nsid
+        "place.stream.chat.message".to_string(),
+        Box::new(ingestors::place_stream_chat_message::PlaceStreamChatMessageIngestor::new(agent)),
+    );
+
+    // arc it
     let ingestors = Arc::new(ingestors);
 
-    // tracks the last message we've processed
     let cursor: Arc<Mutex<Option<u64>>> = Arc::new(Mutex::new(load_cursor().await));
 
-    // get channels
     let msg_rx = jetstream.get_msg_rx();
     let reconnect_tx = jetstream.get_reconnect_tx();
 
@@ -136,88 +137,5 @@ async fn main() {
     if let Err(e) = jetstream.connect(cursor.clone()).await {
         eprintln!("Failed to connect to Jetstream: {}", e);
         std::process::exit(1);
-    }
-}
-
-pub struct MyCoolIngestor {
-    agent: BskyAgent,
-}
-
-impl MyCoolIngestor {
-    pub fn new(agent: BskyAgent) -> Self {
-        Self { agent }
-    }
-}
-
-/// A cool ingestor implementation.
-#[async_trait]
-impl LexiconIngestor for MyCoolIngestor {
-    async fn ingest(&self, message: Event<Value>) -> anyhow::Result<()> {
-        if let Some(Commit {
-            record: Some(record),
-            cid: Some(cid),
-            rkey,
-            collection,
-            ..
-        }) = message.commit
-        {
-            let riposte =
-                serde_json::from_value::<atrium_api::app::bsky::feed::post::RecordData>(record)?;
-
-            if !(riposte.text.starts_with("@gork.bluesky.bot")
-                && (riposte.text.contains("is this")
-                    || riposte.text.contains("am i")
-                    || riposte.text.contains("do you")))
-            {
-                return Ok(());
-            };
-            // set the proper reply stuff to reply to mentioned post
-
-            // get the cid
-            let rcid = match Cid::from_str(&cid) {
-                Ok(r) => r,
-                Err(e) => return Err(anyhow::anyhow!(e)),
-            };
-
-            let reply = if let Some(mut reply) = riposte.reply {
-                reply.parent = MainData {
-                    cid: rcid,
-                    uri: format!("at://{}/{}/{}", message.did, collection, rkey),
-                }
-                .into();
-                Some(reply)
-            } else {
-                Some(
-                    ReplyRefData {
-                        parent: MainData {
-                            cid: rcid.clone(),
-                            uri: format!("at://{}/{}/{}", message.did, collection, rkey),
-                        }
-                        .into(),
-                        root: MainData {
-                            cid: rcid,
-                            uri: format!("at://{}/{}/{}", message.did, collection, rkey),
-                        }
-                        .into(),
-                    }
-                    .into(),
-                )
-            };
-
-            self.agent
-                .create_record(atrium_api::app::bsky::feed::post::RecordData {
-                    created_at: Datetime::now(),
-                    embed: None,
-                    entities: None,
-                    facets: None,
-                    labels: None,
-                    langs: None,
-                    reply,
-                    tags: None,
-                    text: "yeh".to_string(),
-                })
-                .await?;
-        }
-        Ok(())
     }
 }
