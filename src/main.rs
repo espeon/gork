@@ -67,7 +67,7 @@ async fn main() {
         ])
         .ws_url(JetstreamEndpoints::Custom(
             // use your jetstream endpoint here, ideally not fronted by HAProxy
-            "https://jetstream.fire.hose.cam/".to_string(),
+            "wss://jetstream.fire.hose.cam/subscribe".to_string(),
         ))
         .bound(8 * 8 * 8 * 8 * 8 * 8) // 262144
         .build();
