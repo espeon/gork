@@ -7,6 +7,7 @@ use tracing::{error, info};
 
 use rocketman::{
     connection::JetstreamConnection,
+    endpoints::JetstreamEndpoints,
     handler::{self, Ingestors},
     options::JetstreamOptions,
 };
@@ -64,6 +65,10 @@ async fn main() {
             "app.bsky.feed.post".to_string(),
             "place.stream.chat.message".to_string(),
         ])
+        .ws_url(JetstreamEndpoints::Custom(
+            // use your jetstream endpoint here, ideally not fronted by HAProxy
+            "https://jetstream.fire.hose.cam/".to_string(),
+        ))
         .bound(8 * 8 * 8 * 8 * 8 * 8) // 262144
         .build();
     // create the jetstream connector
