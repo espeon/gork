@@ -106,7 +106,7 @@ async fn main() {
 
         tokio::spawn(async move {
             info!("Starting worker thread {}", i);
-            while let Ok(message) = msg_rx_clone.recv_async().await {
+            while let Ok(message) = msg_rx_clone.recv().await {
                 if let Err(e) = handler::handle_message(
                     message,
                     &ingestors_clone,
